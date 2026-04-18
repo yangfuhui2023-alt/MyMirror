@@ -1,0 +1,582 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>My Mirror for SanMao Yang</title>
+<style>
+  :root {
+    --bg: #faf9f6;
+    --ink: #141413;
+    --sub: #8a8a85;
+    --accent: #cc785c;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: "Courier New", monospace;
+    background: var(--bg);
+    color: var(--ink);
+    min-height: 100vh;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 40px 20px;
+    position: relative;
+  }
+
+  svg { shape-rendering: crispEdges; }
+
+  header {
+    text-align: center;
+    margin-bottom: 30px;
+  }
+  h1 {
+    font-size: 20px;
+    font-weight: 700;
+    letter-spacing: 6px;
+  }
+
+  main {
+    position: relative;
+    width: 100%;
+    max-width: 960px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .stage {
+    position: relative;
+    width: 640px;
+    height: 440px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .scene {
+    width: 380px;
+    height: 320px;
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 2;
+  }
+
+  .pose {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    opacity: 0;
+    transition: opacity 0.35s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .pose.active { opacity: 1; }
+  .pose svg { width: 100%; height: 100%; }
+
+  .pose.active svg { animation: idle 2.4s steps(1) infinite; }
+  @keyframes idle {
+    0%, 50% { transform: translateY(0); }
+    50.01%, 100% { transform: translateY(-6px); }
+  }
+
+  .pose-executor.active svg { animation: twitch 1.2s steps(1) infinite; }
+  @keyframes twitch {
+    0%, 40%, 60%, 100% { transform: translateY(0); }
+    45% { transform: translateY(-2px); }
+    55% { transform: translateY(1px); }
+  }
+
+  .pose-soul.active svg { animation: dreamy 3s ease-in-out infinite; }
+  @keyframes dreamy {
+    0%, 100% { transform: rotate(-2deg) translateY(0); }
+    50% { transform: rotate(2deg) translateY(-4px); }
+  }
+
+  .pose-defender.active svg { animation: peek 2s ease-in-out infinite; }
+  @keyframes peek {
+    0%, 100% { transform: translateX(-3px); }
+    50% { transform: translateX(3px); }
+  }
+
+  .pose-censor.active svg { animation: shake 2s ease-in-out infinite; }
+  @keyframes shake {
+    0%, 100% { transform: rotate(0); }
+    25% { transform: rotate(-3deg); }
+    75% { transform: rotate(3deg); }
+  }
+
+  .pose-action.active svg { animation: dash 0.8s ease-in-out infinite; }
+  @keyframes dash {
+    0%, 100% { transform: translateX(-8px); }
+    50% { transform: translateX(8px); }
+  }
+
+  .shadow {
+    position: absolute;
+    bottom: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 170px;
+    height: 8px;
+    background: var(--ink);
+    opacity: 0.12;
+    animation: shadowPulse 2.4s steps(1) infinite;
+    z-index: 1;
+  }
+  @keyframes shadowPulse {
+    0%, 50% { transform: translateX(-50%) scaleX(1); opacity: 0.12; }
+    50.01%, 100% { transform: translateX(-50%) scaleX(0.85); opacity: 0.08; }
+  }
+
+  .trait {
+    position: absolute;
+    width: 64px;
+    height: 64px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.25s;
+    z-index: 3;
+    border-radius: 50%;
+    background: var(--bg);
+  }
+  .trait svg { width: 36px; height: 36px; }
+  .trait:hover { transform: scale(1.15); }
+  .trait.active { background: var(--ink); }
+  .trait.active svg g { fill: var(--bg) !important; }
+  .trait.strength.active { background: var(--accent); }
+
+  .trait-1 { top: 4%;  left: 2%; }
+  .trait-2 { top: 4%;  right: 2%; }
+  .trait-3 { top: 50%; left: 0;  transform: translateY(-50%); }
+  .trait-3:hover { transform: translateY(-50%) scale(1.15); }
+  .trait-4 { top: 50%; right: 0; transform: translateY(-50%); }
+  .trait-4:hover { transform: translateY(-50%) scale(1.15); }
+  .trait-5 { bottom: 4%; left: 50%; transform: translateX(-50%); }
+  .trait-5:hover { transform: translateX(-50%) scale(1.15); }
+
+  /* tooltip */
+  .tip {
+    position: absolute;
+    left: 50%;
+    top: 100%;
+    transform: translate(-50%, 8px);
+    background: var(--ink);
+    color: var(--bg);
+    padding: 4px 10px;
+    font-size: 10px;
+    letter-spacing: 3px;
+    white-space: nowrap;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.2s;
+    font-weight: 700;
+  }
+  .trait:hover .tip { opacity: 1; }
+  .trait.strength .tip { background: var(--accent); }
+
+  /* 特殊方向：左右两侧的按钮 tooltip 在下方时需翻转 */
+  .trait-3 .tip, .trait-4 .tip { top: auto; bottom: 100%; transform: translate(-50%, -8px); }
+  .trait-5 .tip { top: auto; bottom: 100%; transform: translate(-50%, -8px); }
+
+  /* 眨眼 */
+  .blink { animation: blinkCycle 4s steps(1) infinite; }
+  @keyframes blinkCycle {
+    0%, 96% { opacity: 1; }
+    96.01%, 100% { opacity: 0; }
+  }
+  .blink-inv { animation: blinkInv 4s steps(1) infinite; }
+  @keyframes blinkInv {
+    0%, 96% { opacity: 0; }
+    96.01%, 100% { opacity: 1; }
+  }
+
+  .glow-heart { animation: glowPulse 0.8s ease-in-out infinite; transform-origin: center; }
+  @keyframes glowPulse {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.5); }
+  }
+
+  .moon-wobble { animation: moonWobble 4s ease-in-out infinite; transform-origin: center; }
+  @keyframes moonWobble {
+    0%,100% { transform: rotate(-5deg); }
+    50% { transform: rotate(5deg); }
+  }
+
+  .motion-flash { animation: flash 0.4s steps(1) infinite; }
+  @keyframes flash { 0%,50%{opacity:1;} 50.01%,100%{opacity:0.3;} }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>MY MIRROR FOR SANMAO YANG</h1>
+</header>
+
+<main>
+  <div class="stage" id="stage">
+
+    <div class="scene" id="scene">
+
+      <!-- IDLE -->
+      <div class="pose active" data-pose="idle">
+        <svg viewBox="0 0 28 28">
+          <g fill="#141413">
+            <rect x="6" y="4" width="2" height="2"/><rect x="5" y="5" width="4" height="1"/>
+            <rect x="20" y="4" width="2" height="2"/><rect x="19" y="5" width="4" height="1"/>
+            <rect x="5" y="6" width="18" height="1"/><rect x="4" y="7" width="20" height="2"/>
+            <rect x="4" y="9" width="3" height="4"/><rect x="21" y="9" width="3" height="4"/>
+            <rect x="4" y="13" width="20" height="1"/><rect x="5" y="14" width="18" height="1"/><rect x="6" y="15" width="16" height="1"/>
+            <rect x="7" y="16" width="14" height="1"/><rect x="8" y="17" width="12" height="5"/>
+            <rect x="8" y="22" width="3" height="2"/><rect x="13" y="22" width="2" height="2"/><rect x="17" y="22" width="3" height="2"/>
+            <rect x="2" y="11" width="2" height="1"/><rect x="2" y="13" width="2" height="1"/>
+            <rect x="24" y="11" width="2" height="1"/><rect x="24" y="13" width="2" height="1"/>
+            <rect x="20" y="15" width="2" height="1"/><rect x="21" y="13" width="2" height="2"/><rect x="22" y="11" width="2" height="2"/>
+          </g>
+          <g fill="#faf9f6">
+            <rect x="8" y="10" width="3" height="2"/><rect x="17" y="10" width="3" height="2"/>
+            <rect x="12" y="13" width="1" height="1"/><rect x="15" y="13" width="1" height="1"/>
+          </g>
+          <g class="blink" fill="#141413">
+            <rect x="9" y="10" width="1" height="2"/><rect x="18" y="10" width="1" height="2"/>
+          </g>
+          <g class="blink-inv" fill="#141413">
+            <rect x="8" y="11" width="3" height="1"/><rect x="17" y="11" width="3" height="1"/>
+          </g>
+          <rect x="13" y="12" width="2" height="1" fill="#141413"/>
+          <g>
+            <rect x="13" y="18" width="2" height="1" fill="#cc785c"/>
+            <rect x="13" y="19" width="1" height="1" fill="#cc785c"/>
+          </g>
+        </svg>
+      </div>
+
+      <!-- EXECUTOR -->
+      <div class="pose pose-executor" data-pose="executor">
+        <svg viewBox="0 0 40 28">
+          <g fill="#141413">
+            <rect x="34" y="16" width="2" height="2"/>
+          </g>
+          <g fill="#141413">
+            <rect x="6" y="3" width="2" height="2"/><rect x="5" y="4" width="4" height="1"/>
+            <rect x="14" y="3" width="2" height="2"/><rect x="13" y="4" width="4" height="1"/>
+            <rect x="5" y="5" width="12" height="1"/>
+            <rect x="4" y="6" width="14" height="2"/>
+            <rect x="3" y="8" width="16" height="1"/>
+          </g>
+          <g fill="#faf9f6">
+            <rect x="6" y="7" width="2" height="1"/>
+            <rect x="14" y="7" width="2" height="1"/>
+          </g>
+          <g fill="#141413">
+            <rect x="7" y="7" width="1" height="1"/>
+            <rect x="15" y="7" width="1" height="1"/>
+          </g>
+          <rect x="10" y="8" width="2" height="1" fill="#141413"/>
+          <g fill="#141413">
+            <rect x="4" y="9" width="20" height="1"/>
+            <rect x="3" y="10" width="22" height="2"/>
+            <rect x="4" y="12" width="22" height="2"/>
+            <rect x="5" y="14" width="20" height="1"/>
+            <rect x="25" y="10" width="2" height="1"/>
+            <rect x="26" y="8" width="2" height="2"/>
+            <rect x="27" y="6" width="2" height="2"/>
+            <rect x="28" y="5" width="2" height="1"/>
+            <rect x="3" y="15" width="3" height="2"/>
+            <rect x="7" y="15" width="2" height="2"/>
+            <rect x="18" y="15" width="2" height="3"/>
+            <rect x="23" y="15" width="2" height="3"/>
+          </g>
+          <g>
+            <rect x="13" y="11" width="2" height="1" fill="#cc785c"/>
+            <rect x="13" y="12" width="1" height="1" fill="#cc785c"/>
+          </g>
+          <g fill="#141413">
+            <rect x="1" y="7" width="2" height="1"/>
+            <rect x="17" y="7" width="2" height="1"/>
+          </g>
+        </svg>
+      </div>
+
+      <!-- SOUL -->
+      <div class="pose pose-soul" data-pose="soul">
+        <svg viewBox="0 0 32 28">
+          <g class="moon-wobble" transform="translate(24,4)">
+            <g fill="#141413">
+              <rect x="1" y="0" width="4" height="1"/>
+              <rect x="0" y="1" width="2" height="4"/>
+              <rect x="1" y="5" width="4" height="1"/>
+              <rect x="5" y="1" width="1" height="1"/>
+              <rect x="5" y="4" width="1" height="1"/>
+            </g>
+            <rect x="2" y="1" width="3" height="4" fill="#faf9f6"/>
+            <rect x="4" y="2" width="1" height="2" fill="#141413"/>
+          </g>
+          <g fill="#141413">
+            <rect x="20" y="2" width="1" height="1"/>
+            <rect x="28" y="10" width="1" height="1"/>
+          </g>
+          <g fill="#141413">
+            <rect x="7" y="6" width="2" height="2"/><rect x="6" y="7" width="4" height="1"/>
+            <rect x="13" y="6" width="2" height="2"/><rect x="12" y="7" width="4" height="1"/>
+            <rect x="6" y="8" width="10" height="1"/>
+            <rect x="5" y="9" width="12" height="3"/>
+            <rect x="6" y="12" width="10" height="1"/>
+            <rect x="8" y="13" width="6" height="1"/>
+            <rect x="6" y="14" width="10" height="7"/>
+            <rect x="6" y="21" width="3" height="2"/>
+            <rect x="10" y="21" width="2" height="2"/>
+            <rect x="13" y="21" width="3" height="2"/>
+            <rect x="15" y="15" width="2" height="1"/>
+            <rect x="16" y="13" width="2" height="2"/>
+            <rect x="17" y="11" width="2" height="2"/>
+          </g>
+          <g fill="#faf9f6">
+            <rect x="7" y="9" width="2" height="1"/>
+            <rect x="13" y="9" width="2" height="1"/>
+          </g>
+          <g fill="#141413">
+            <rect x="7" y="9" width="1" height="1"/>
+            <rect x="13" y="9" width="1" height="1"/>
+          </g>
+          <rect x="10" y="11" width="2" height="1" fill="#141413"/>
+          <g class="glow-heart">
+            <rect x="9" y="16" width="4" height="1" fill="#cc785c"/>
+            <rect x="9" y="17" width="3" height="1" fill="#cc785c"/>
+            <rect x="10" y="18" width="2" height="1" fill="#cc785c"/>
+          </g>
+        </svg>
+      </div>
+
+      <!-- DEFENDER -->
+      <div class="pose pose-defender" data-pose="defender">
+        <svg viewBox="0 0 28 28">
+          <g fill="#141413">
+            <rect x="8" y="8" width="2" height="2"/><rect x="7" y="9" width="4" height="1"/>
+            <rect x="18" y="8" width="2" height="2"/><rect x="17" y="9" width="4" height="1"/>
+            <rect x="7" y="10" width="14" height="1"/>
+            <rect x="6" y="11" width="16" height="3"/>
+          </g>
+          <g fill="#faf9f6">
+            <rect x="9" y="12" width="3" height="1"/>
+            <rect x="16" y="12" width="3" height="1"/>
+          </g>
+          <g fill="#141413">
+            <rect x="10" y="12" width="1" height="1"/>
+            <rect x="17" y="12" width="1" height="1"/>
+          </g>
+          <g fill="#141413">
+            <rect x="3" y="14" width="22" height="1"/>
+            <rect x="3" y="14" width="1" height="10"/>
+            <rect x="24" y="14" width="1" height="10"/>
+            <rect x="3" y="24" width="22" height="1"/>
+            <rect x="4" y="18" width="20" height="1"/>
+          </g>
+          <g fill="#141413">
+            <rect x="9" y="20" width="2" height="1"/>
+            <rect x="12" y="20" width="5" height="1"/>
+            <rect x="18" y="20" width="1" height="1"/>
+          </g>
+        </svg>
+      </div>
+
+      <!-- CENSOR -->
+      <div class="pose pose-censor" data-pose="censor">
+        <svg viewBox="0 0 28 28">
+          <g fill="#141413">
+            <rect x="6" y="4" width="2" height="2"/><rect x="5" y="5" width="4" height="1"/>
+            <rect x="20" y="4" width="2" height="2"/><rect x="19" y="5" width="4" height="1"/>
+            <rect x="5" y="6" width="18" height="1"/>
+            <rect x="4" y="7" width="20" height="7"/>
+            <rect x="5" y="14" width="18" height="1"/>
+            <rect x="6" y="15" width="16" height="1"/>
+            <rect x="7" y="16" width="14" height="5"/>
+            <rect x="8" y="21" width="3" height="2"/>
+            <rect x="17" y="21" width="3" height="2"/>
+            <rect x="5" y="8" width="5" height="3"/>
+            <rect x="18" y="8" width="5" height="3"/>
+          </g>
+          <g fill="#141413">
+            <rect x="12" y="1" width="4" height="1"/>
+            <rect x="15" y="2" width="1" height="2"/>
+            <rect x="13" y="4" width="2" height="1"/>
+            <rect x="13" y="5" width="1" height="1"/>
+            <rect x="13" y="7" width="1" height="1"/>
+          </g>
+          <rect x="12" y="12" width="4" height="1" fill="#141413"/>
+          <g fill="#141413">
+            <rect x="2" y="11" width="2" height="1"/>
+            <rect x="24" y="11" width="2" height="1"/>
+          </g>
+          <g>
+            <rect x="13" y="18" width="2" height="1" fill="#cc785c"/>
+            <rect x="13" y="19" width="1" height="1" fill="#cc785c"/>
+          </g>
+        </svg>
+      </div>
+
+      <!-- ACTION -->
+      <div class="pose pose-action" data-pose="action">
+        <svg viewBox="0 0 40 24">
+          <g fill="#cc785c" class="motion-flash">
+            <rect x="0" y="10" width="5" height="1"/>
+            <rect x="0" y="13" width="3" height="1"/>
+            <rect x="0" y="16" width="4" height="1"/>
+          </g>
+          <g fill="#141413">
+            <rect x="17" y="5" width="2" height="2"/>
+            <rect x="19" y="6" width="2" height="1"/>
+            <rect x="24" y="5" width="2" height="2"/>
+            <rect x="22" y="6" width="2" height="1"/>
+            <rect x="28" y="7" width="7" height="1"/>
+            <rect x="26" y="8" width="10" height="3"/>
+            <rect x="27" y="11" width="8" height="1"/>
+            <rect x="10" y="9" width="18" height="1"/>
+            <rect x="8" y="10" width="22" height="3"/>
+            <rect x="10" y="13" width="18" height="1"/>
+            <rect x="32" y="13" width="3" height="2"/>
+            <rect x="35" y="14" width="2" height="1"/>
+            <rect x="8" y="13" width="3" height="3"/>
+            <rect x="6" y="15" width="3" height="1"/>
+            <rect x="5" y="9" width="2" height="1"/>
+            <rect x="3" y="8" width="2" height="2"/>
+            <rect x="1" y="7" width="2" height="2"/>
+          </g>
+          <g fill="#faf9f6">
+            <rect x="31" y="9" width="2" height="1"/>
+          </g>
+          <g fill="#141413">
+            <rect x="32" y="9" width="1" height="1"/>
+          </g>
+          <g>
+            <rect x="20" y="11" width="2" height="1" fill="#cc785c"/>
+            <rect x="20" y="12" width="1" height="1" fill="#cc785c"/>
+          </g>
+        </svg>
+      </div>
+
+    </div>
+
+    <div class="shadow"></div>
+
+    <div class="trait trait-1" data-target="executor">
+      <svg viewBox="0 0 16 16">
+        <g fill="#141413"><rect x="2" y="5" width="12" height="6"/></g>
+        <g fill="#faf9f6"><rect x="4" y="7" width="8" height="2"/></g>
+        <rect x="7" y="7" width="2" height="2" fill="#141413"/>
+      </svg>
+      <div class="tip">FOCUS</div>
+    </div>
+
+    <div class="trait trait-2" data-target="soul">
+      <svg viewBox="0 0 16 16">
+        <g fill="#141413">
+          <rect x="1" y="8" width="3" height="1"/>
+          <rect x="4" y="6" width="1" height="2"/>
+          <rect x="5" y="5" width="1" height="1"/>
+          <rect x="6" y="6" width="1" height="2"/>
+          <rect x="7" y="8" width="1" height="4"/>
+          <rect x="8" y="6" width="1" height="2"/>
+          <rect x="9" y="5" width="1" height="1"/>
+          <rect x="10" y="6" width="1" height="2"/>
+          <rect x="11" y="8" width="1" height="1"/>
+          <rect x="12" y="8" width="3" height="1"/>
+        </g>
+      </svg>
+      <div class="tip">FEEL</div>
+    </div>
+
+    <div class="trait trait-3" data-target="defender">
+      <svg viewBox="0 0 16 16">
+        <g fill="#141413">
+          <rect x="4" y="3" width="8" height="2"/>
+          <rect x="3" y="5" width="10" height="7"/>
+          <rect x="4" y="12" width="8" height="1"/>
+          <rect x="6" y="13" width="4" height="1"/>
+        </g>
+        <g fill="#faf9f6">
+          <rect x="5" y="7" width="6" height="1"/>
+          <rect x="5" y="9" width="6" height="1"/>
+        </g>
+      </svg>
+      <div class="tip">HIDE</div>
+    </div>
+
+    <div class="trait trait-4" data-target="censor">
+      <svg viewBox="0 0 16 16">
+        <g fill="#141413">
+          <rect x="2" y="7" width="2" height="2"/>
+          <rect x="4" y="5" width="2" height="1"/>
+          <rect x="4" y="10" width="2" height="1"/>
+          <rect x="6" y="4" width="4" height="1"/>
+          <rect x="6" y="11" width="4" height="1"/>
+          <rect x="10" y="5" width="2" height="1"/>
+          <rect x="10" y="10" width="2" height="1"/>
+          <rect x="12" y="7" width="2" height="2"/>
+          <rect x="6" y="6" width="4" height="4"/>
+        </g>
+        <g fill="#faf9f6"><rect x="7" y="7" width="2" height="2"/></g>
+      </svg>
+      <div class="tip">DOUBT</div>
+    </div>
+
+    <div class="trait trait-5 strength" data-target="action">
+      <svg viewBox="0 0 16 16">
+        <g fill="#cc785c">
+          <rect x="8" y="1" width="3" height="1"/>
+          <rect x="7" y="2" width="3" height="1"/>
+          <rect x="6" y="3" width="3" height="1"/>
+          <rect x="5" y="4" width="3" height="1"/>
+          <rect x="4" y="5" width="4" height="1"/>
+          <rect x="5" y="6" width="5" height="1"/>
+          <rect x="6" y="7" width="5" height="1"/>
+          <rect x="7" y="8" width="4" height="1"/>
+          <rect x="6" y="9" width="3" height="1"/>
+          <rect x="5" y="10" width="3" height="1"/>
+          <rect x="4" y="11" width="3" height="1"/>
+          <rect x="3" y="12" width="3" height="1"/>
+          <rect x="2" y="13" width="3" height="1"/>
+        </g>
+      </svg>
+      <div class="tip">SPRINT</div>
+    </div>
+
+  </div>
+</main>
+
+<script>
+  const traits = document.querySelectorAll('.trait');
+  const poses = document.querySelectorAll('.pose');
+
+  function setPose(key) {
+    poses.forEach(p => p.classList.toggle('active', p.dataset.pose === key));
+  }
+
+  traits.forEach(t => {
+    t.addEventListener('mouseenter', () => {
+      traits.forEach(x => x.classList.remove('active'));
+      t.classList.add('active');
+      setPose(t.dataset.target);
+    });
+    t.addEventListener('mouseleave', () => {
+      t.classList.remove('active');
+      setPose('idle');
+    });
+    t.addEventListener('click', () => {
+      traits.forEach(x => x.classList.remove('active'));
+      t.classList.add('active');
+      setPose(t.dataset.target);
+    });
+  });
+</script>
+
+</body>
+</html>
